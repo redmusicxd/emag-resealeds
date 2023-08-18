@@ -9,6 +9,7 @@ import {
   Flex,
   Heading,
   IconButton,
+  Image,
   Link,
   Progress,
   Spacer,
@@ -24,7 +25,7 @@ import { FaSync } from "react-icons/fa";
 
 export default function ProductID() {
   const router = useRouter();
-  const textBackground = useColorModeValue("#757575", "#a0a0a0")
+  const textBackground = useColorModeValue("#757575", "#a0a0a0");
   const { id } = router.query;
   const [product, setProduct] = useState<IMonitoredProducts>({
     name: "",
@@ -48,36 +49,36 @@ export default function ProductID() {
 
       return res.data;
     } catch (error) {
-    let data = {};
-    setLoading(true);
-    const res = await axios.post(
-      process.env.NEXT_PUBLIC_BROWSERLESS_API || "",
-      {
-        url: val,
-      }
-    );
-
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(res.data, "text/html");
-    doc.querySelectorAll("head script").forEach((i) => {
-      // console.log(i.innerHTML);
-      if (i.innerHTML != "") {
-        try {
-          let EM = eval(i.innerHTML + "EM");
-          let img: string = EM.product_thumb;
-          setLoading(false);
-          data = {
-            name: EM.product_title,
-            price: EM.productDiscountedPrice,
-            img: img.substring(0, img.indexOf(new URL(img).search)),
-            offers: EM.used_offers,
-          };
-        } catch (error) {
-          console.error(error);
+      let data = {};
+      setLoading(true);
+      const res = await axios.post(
+        process.env.NEXT_PUBLIC_BROWSERLESS_API || "",
+        {
+          url: val,
         }
-      }
-    });
-    return data;
+      );
+
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(res.data, "text/html");
+      doc.querySelectorAll("head script").forEach((i) => {
+        // console.log(i.innerHTML);
+        if (i.innerHTML != "") {
+          try {
+            let EM = eval(i.innerHTML + "EM");
+            let img: string = EM.product_thumb;
+            setLoading(false);
+            data = {
+              name: EM.product_title,
+              price: EM.productDiscountedPrice,
+              img: img.substring(0, img.indexOf(new URL(img).search)),
+              offers: EM.used_offers,
+            };
+          } catch (error) {
+            console.error(error);
+          }
+        }
+      });
+      return data;
     }
   };
   useEffect(() => {
@@ -95,12 +96,14 @@ export default function ProductID() {
           setProduct(prod[0]);
           let new_data = await fetchProductInfo(prod[0].link);
 
-          if (new_data.offers &&
+          if (
+            new_data.offers &&
             (prod[0].offers.filter(
               (o: { id: any }) =>
                 !new_data.offers?.some((l: { id: any }) => l.id === o.id)
             ).length > 0 ||
-            new_data.price != prod[0].price || prod[0].offers?.length != new_data.offers?.length)
+              new_data.price != prod[0].price ||
+              prod[0].offers?.length != new_data.offers?.length)
           ) {
             if (new_data.name) {
               setProduct({ ...prod[0], ...new_data });
@@ -109,7 +112,7 @@ export default function ProductID() {
                 .from("monitored_products")
                 .update({ ...new_data, updated_at: new Date() })
                 .eq("id", prod[0].id);
-              if(error) console.log(error);
+              if (error) console.log(error);
             } else setLoading(false);
           } else if (!new_data.offers) {
             if (new_data.name) {
@@ -119,7 +122,7 @@ export default function ProductID() {
                 .from("monitored_products")
                 .update({ ...new_data, offers: [], updated_at: new Date() })
                 .eq("id", prod[0].id);
-              if(error) console.log(error);
+              if (error) console.log(error);
             } else setLoading(false);
           }
         }
@@ -150,7 +153,24 @@ export default function ProductID() {
       {product.id && (
         <Card shadow="lg" maxW="520px" mt="2" mb="10" mx="4" minW="320px">
           <CardHeader pb="0">
-            <Heading size={["md", "lg"]} mb="2">{product?.name}</Heading>
+            <Box flex="1" display="flex">
+              <Image
+                src={product.img}
+                width={["100px", "110px", "120px", "150px"]}
+                height="auto"
+                objectFit="cover"
+                alt={product.name}
+                borderRadius="2xl"
+                // alignSelf="center"
+                p="1"
+                pr="2"
+                mb="2"
+                // flex="1"
+              />
+              <Heading size={["md", "lg"]} mb="2">
+                {product?.name}
+              </Heading>
+            </Box>
             <Flex align="center">
               <Box>
                 <Link
@@ -185,8 +205,17 @@ export default function ProductID() {
             {data.length == 0 && (
               <>
                 <Divider my="2" />
-                {isLoading && <Progress size="xs" isIndeterminate mt="4"/>}
-                {!isLoading && <Heading size="md" textAlign="center" color={textBackground} pt="2">No Resealeds</Heading>}
+                {isLoading && <Progress size="xs" isIndeterminate mt="4" />}
+                {!isLoading && (
+                  <Heading
+                    size="md"
+                    textAlign="center"
+                    color={textBackground}
+                    pt="2"
+                  >
+                    No Resealeds
+                  </Heading>
+                )}
               </>
             )}
             {data.map(
